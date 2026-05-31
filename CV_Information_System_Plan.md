@@ -564,3 +564,377 @@ Useful for backups, integrations, and import/export between systems.
 - Should sensitive personal fields be included in normal exports?
 - Should references be exported by default or only marked as available upon request?
 
+## Proposed MVP Decisions
+
+These decisions keep the first version small enough to build quickly while preserving a clean path toward a full web application later.
+
+- First version type: command-line exporter plus structured data file.
+- Primary source format: YAML, because it is easier to edit manually than JSON.
+- First export formats: Markdown and HTML.
+- Initial storage: file-based YAML only.
+- Future storage: SQLite first, then PostgreSQL if the system becomes multi-user or cloud-hosted.
+- Main stored data language: multilingual from the start for user-facing text, with English field names in the data model.
+- Default export language: Spanish.
+- Sensitive fields: stored, but hidden from public exports by default.
+- References: stored, but excluded by default and replaced with "available upon request" when needed.
+- CV variants: supported in the data file from the beginning, even if the first exporter only uses one default variant.
+
+## MVP Scope
+
+### Included
+
+- A single structured `cv-data.yaml` file with all CV information.
+- Validation rules that detect missing required fields and invalid references between records.
+- Markdown exporter for readable, versionable CV output.
+- HTML exporter for browser preview and later PDF generation.
+- One default Spanish CV variant.
+- Support for hiding sensitive personal data in exports.
+- Support for selecting highlighted skills and ordered sections.
+
+### Not Included Yet
+
+- Database persistence.
+- Web UI.
+- Login or multi-user support.
+- PDF generation.
+- DOCX generation.
+- Automatic import from the current DOCX.
+- Template marketplace or advanced template editor.
+
+## Functional Requirements
+
+### Data Management
+
+- The system must store the complete professional profile in one source file.
+- The system must allow a person to have multiple contact methods.
+- The system must support multiple professional summaries by language and target role.
+- The system must support multiple CV variants from the same source data.
+- The system must support experience, education, certifications, skills, languages, and references.
+- The system must normalize technologies so work experience and skills can reuse the same technology records.
+- The system must keep information that is not currently exported.
+
+### Validation
+
+- The system must validate the source file before exporting.
+- Required person fields must be present: `id`, `full_name`, and at least one public contact method.
+- Each work experience must have a company, start date, title, and summary.
+- Current jobs must use `is_current: true` and should not require an end date.
+- Non-current jobs should have an end date.
+- Each skill must reference an existing technology.
+- Each work experience technology must reference an existing technology.
+- Each CV variant section must use a supported section type.
+- Export should fail with a clear error message when required data is invalid.
+- Validation warnings should not block export unless the data would make the generated CV incorrect.
+
+### Exporting
+
+- The exporter must accept a variant id.
+- The exporter must apply section order from the selected variant.
+- The exporter must include only visible sections.
+- The exporter must include only data allowed by visibility rules.
+- The exporter must support language-specific labels.
+- The exporter must generate deterministic output so repeated exports with unchanged data produce the same content.
+- The exporter must write generated files into an `exports/` directory.
+- The exporter must not overwrite existing files unless explicitly requested or unless using a deterministic latest-output filename.
+
+## Suggested Project Structure
+
+```text
+CurriculumVitae/
+  cv-data.yaml
+  CV_Information_System_Plan.md
+  README.md
+  src/
+    cv_exporter/
+      __init__.py
+      cli.py
+      load.py
+      validate.py
+      render_markdown.py
+      render_html.py
+      models.py
+  templates/
+    markdown/
+      default_es.md.j2
+    html/
+      default_es.html.j2
+      default.css
+  exports/
+    .gitkeep
+  tests/
+    test_validation.py
+    test_markdown_export.py
+```
+
+The structure above assumes Python for the first command-line prototype. If the first implementation uses Java + Spring Boot instead, the same boundaries should remain: data loading, validation, rendering, templates, and tests.
+
+## Initial YAML Data Shape
+
+The first data file should be human-editable and stable. A simplified starting shape:
+
+```yaml
+person:
+  id: simon-cardona
+  full_name: "Simon Manuel Cardona Posso"
+  preferred_name: "Simon Cardona"
+  headline:
+    es: "Ingeniero de Sistemas / Desarrollador Backend"
+    en: "Systems Engineer / Backend Developer"
+  date_of_birth: "1983-02-07"
+  place_of_birth: "Colombia"
+  nationalities:
+    - "Colombian"
+    - "Uruguayan legal nationality"
+  civil_status: "Married"
+  identity_document:
+    value: "4.314.721-7"
+    visibility: private
+
+contacts:
+  - id: email-main
+    person_id: simon-cardona
+    type: email
+    value: "scardona9@gmail.com"
+    is_primary: true
+    visibility: public
+  - id: linkedin-main
+    person_id: simon-cardona
+    type: linkedin
+    value: "Simon Cardona"
+    url: "https://uy.linkedin.com/in/simon-cardona-8545b212"
+    visibility: public
+
+summaries:
+  - id: summary-es-backend
+    person_id: simon-cardona
+    language: es
+    target_role: backend
+    is_default: true
+    content: "Resumen profesional pendiente de redaccion final."
+
+technologies:
+  - id: java
+    name: Java
+    category: language
+  - id: spring-boot
+    name: Spring Boot
+    category: framework
+  - id: aws
+    name: AWS
+    category: cloud
+
+companies:
+  - id: dualboot-partners
+    name: Dualboot Partners
+  - id: intraway
+    name: Intraway
+
+experience:
+  - id: dualboot-2023-current
+    person_id: simon-cardona
+    company_id: dualboot-partners
+    job_title: "Software Developer"
+    start_date: "2023-01"
+    end_date:
+    is_current: true
+    summary:
+      es: "Desarrollo de soluciones utilizando Java AWS SDK."
+      en: "Development of solutions using Java AWS SDK."
+    methodology: Scrum
+    technologies:
+      - technology_id: java
+      - technology_id: aws
+
+skills:
+  - id: skill-java
+    person_id: simon-cardona
+    technology_id: java
+    level: expert
+    years_experience: 14
+    is_highlighted: true
+
+cv_variants:
+  - id: default-es
+    person_id: simon-cardona
+    name: "CV Espanol"
+    language: es
+    target_role: backend
+    summary_id: summary-es-backend
+    sections:
+      - section_type: profile
+        sort_order: 10
+        is_visible: true
+      - section_type: experience
+        sort_order: 20
+        is_visible: true
+      - section_type: skills
+        sort_order: 30
+        is_visible: true
+      - section_type: education
+        sort_order: 40
+        is_visible: true
+```
+
+## Visibility Rules
+
+Visibility should be evaluated consistently across all exporters.
+
+- `public`: can appear in normal exports.
+- `private`: stored only; never exported unless explicitly forced.
+- `export_only`: can appear in selected exports but should not appear in public previews.
+- `hidden`: disabled data that remains in the source file for history.
+- `available_on_request`: references or sensitive details can be represented by a generic sentence instead of full data.
+
+Default behavior:
+
+- Email, LinkedIn, and mobile can be public.
+- Identity document, date of birth, civil status, full address, and references are private by default.
+- References should not be printed with names and phone numbers unless the chosen CV variant explicitly enables them.
+
+## Markdown Export Specification
+
+The first Markdown exporter should produce a clean professional CV, not a dump of every stored field.
+
+Recommended section order for `default-es`:
+
+1. Header with name, headline, and public contact methods.
+2. Professional profile.
+3. Work experience.
+4. Technical skills.
+5. Education.
+6. Certifications.
+7. Languages.
+8. References statement.
+
+Formatting rules:
+
+- Use one `#` heading for the person's name.
+- Use `##` headings for major sections.
+- Use reverse chronological order for work experience.
+- Use concise bullet points for achievements and responsibilities.
+- Show current jobs as `YYYY - Present` in English variants and `YYYY - Actualidad` in Spanish variants.
+- Hide empty sections.
+- Hide internal ids.
+
+## HTML Export Specification
+
+The first HTML exporter should use the same content decisions as Markdown.
+
+Requirements:
+
+- Generate one self-contained HTML file or one HTML file plus a CSS file.
+- Use semantic HTML sections.
+- Keep print styles in mind from the beginning.
+- Use CSS variables for colors, spacing, and typography.
+- Avoid hardcoding data in templates.
+- Keep the layout readable in desktop browser preview and printable to PDF later.
+
+## Command-Line Interface
+
+Suggested commands:
+
+```text
+cv-export validate --data cv-data.yaml
+cv-export markdown --data cv-data.yaml --variant default-es --output exports/cv-default-es.md
+cv-export html --data cv-data.yaml --variant default-es --output exports/cv-default-es.html
+```
+
+Expected behavior:
+
+- `validate` prints errors and warnings.
+- Export commands run validation first.
+- Export commands stop on validation errors.
+- Export commands print the generated file path.
+- A `--force` option can overwrite existing output files.
+
+## Non-Functional Requirements
+
+- The source data must remain readable in a normal text editor.
+- The exporter must be deterministic.
+- The code should separate data loading, validation, and rendering.
+- Templates should not contain business rules beyond simple display logic.
+- Tests should cover validation and at least one complete export.
+- The first prototype should run locally without requiring a database server.
+
+## Acceptance Criteria For Phase 1
+
+- `cv-data.yaml` contains the current CV information in structured form.
+- Running validation reports no blocking errors.
+- Running the Markdown export creates a readable Spanish CV.
+- Running the HTML export creates a browser-readable Spanish CV.
+- Sensitive fields are not included in default exports.
+- References are not exposed by default.
+- Work experience appears in reverse chronological order.
+- Skills can be filtered to highlighted skills for short CV variants.
+- The generated output can be regenerated from source data without manual edits.
+
+## Development Specification Documents
+
+The project should keep detailed development specifications in separate Markdown files instead of growing a single large plan forever. The main plan remains the roadmap and index; each area owns its implementation definition documents.
+
+Recommended folder organization:
+
+```text
+CurriculumVitae/
+  backend/
+    definition/
+      domain-definition.md
+      services-definition.md
+      dao-definition.md
+      controllers-definition.md
+      security-definition.md
+      patterns-definition.md
+      logging-exceptions-definition.md
+  frontend/
+    definition/
+      frontend-definition.md
+      screens-definition.md
+      components-definition.md
+  database/
+    definition/
+      database-definition.md
+      schema-definition.md
+      migration-definition.md
+```
+
+### Backend Definition Documents
+
+- `backend/definition/domain-definition.md`: domain entities, aggregate boundaries, value objects, validation invariants, and core business rules.
+- `backend/definition/services-definition.md`: application services, use cases, service responsibilities, transaction boundaries, and orchestration rules.
+- `backend/definition/dao-definition.md`: repository and DAO interfaces, persistence responsibilities, query expectations, and data access constraints.
+- `backend/definition/controllers-definition.md`: REST controllers, endpoints, request/response DTOs, status codes, and API validation behavior.
+- `backend/definition/security-definition.md`: authentication, authorization, sensitive data handling, API protection, audit behavior, and export privacy rules.
+- `backend/definition/patterns-definition.md`: backend design patterns used by the project, their purpose, where they apply, and rules to avoid overengineering.
+- `backend/definition/logging-exceptions-definition.md`: logging, redaction, traceability, custom exception hierarchy, and API error mapping.
+
+### Frontend Definition Documents
+
+- `frontend/definition/frontend-definition.md`: frontend architecture, routing approach, state management, form strategy, validation behavior, and integration boundaries.
+- `frontend/definition/screens-definition.md`: screen-by-screen requirements for profile, experience, education, skills, variants, and exports.
+- `frontend/definition/components-definition.md`: reusable component definitions for forms, tables, pickers, section ordering, preview panels, and export controls.
+
+### Database Definition Documents
+
+- `database/definition/database-definition.md`: database choice, environment assumptions, naming conventions, audit fields, and persistence principles.
+- `database/definition/schema-definition.md`: tables, columns, keys, constraints, indexes, and relationships.
+- `database/definition/migration-definition.md`: migration strategy, versioning rules, seed data, rollback policy, and local development setup.
+
+Documentation rules:
+
+- Each definition file should describe decisions, responsibilities, data contracts, and acceptance criteria for that area.
+- Files should link back to the main plan when they depend on roadmap-level decisions.
+- Implementation work should update the relevant definition file when behavior changes.
+- Keep examples short and concrete; avoid duplicating the same entity or endpoint definition across multiple files.
+
+## Next Backlog Breakdown
+
+1. Create `cv-data.yaml` with the current CV content.
+2. Create a minimal exporter package and CLI.
+3. Implement YAML loading.
+4. Implement validation.
+5. Implement Markdown rendering.
+6. Implement HTML rendering.
+7. Add tests for invalid data and successful export.
+8. Generate the first Spanish Markdown CV.
+9. Generate the first Spanish HTML CV.
+10. Review the output and refine profile summaries and work bullets.
