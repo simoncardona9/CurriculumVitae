@@ -6,6 +6,12 @@ Define repository and data access responsibilities for the backend.
 
 The first MVP may use YAML files, but these DAO boundaries should guide the future SQLite or PostgreSQL implementation.
 
+## Technology Decision
+
+DAO and repository contracts will be implemented in Java.
+
+The first implementation will use YAML-backed repositories. Later implementations may use Spring Data, JPA/Hibernate, JDBC, or another database access mechanism, but service code should stay attached to repository interfaces rather than a specific persistence technology.
+
 ## Persistence Strategy
 
 The first version of the system will use YAML as the persistence source.

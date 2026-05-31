@@ -420,15 +420,16 @@ Limitations:
 
 ## Suggested Backend
 
-Good technology options:
+Technology decision:
 
-- Java + Spring Boot, matching existing Java/Spring experience.
-- Node.js + TypeScript + NestJS, good for fast CRUD APIs and export services.
-- Python + FastAPI, good for document generation and scripting.
+- The backend will be implemented with Java and Spring Boot.
+- Java should be the main backend language.
+- Spring Boot should provide the application framework for REST APIs, dependency injection, validation, configuration, and future persistence integration.
 
 Recommended fit:
 
 - Backend: Java + Spring Boot.
+- Build tool: Gradle.
 - Database: PostgreSQL for long-term use, SQLite for first prototype.
 - Export engine: server-side templates using HTML/CSS first, then PDF generation.
 
@@ -644,15 +645,11 @@ CurriculumVitae/
   cv-data.yaml
   CV_Information_System_Plan.md
   README.md
-  src/
-    cv_exporter/
-      __init__.py
-      cli.py
-      load.py
-      validate.py
-      render_markdown.py
-      render_html.py
-      models.py
+  backend/
+    src/
+      main/
+        java/
+          ...
   templates/
     markdown/
       default_es.md.j2
@@ -662,11 +659,10 @@ CurriculumVitae/
   exports/
     .gitkeep
   tests/
-    test_validation.py
-    test_markdown_export.py
+    ...
 ```
 
-The structure above assumes Python for the first command-line prototype. If the first implementation uses Java + Spring Boot instead, the same boundaries should remain: data loading, validation, rendering, templates, and tests.
+The backend implementation should use Java with Spring Boot. The same boundaries should remain regardless of the first storage mechanism: data loading, validation, rendering, templates, services, repositories, and tests.
 
 ## Initial YAML Data Shape
 

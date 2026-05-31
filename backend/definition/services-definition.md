@@ -6,6 +6,19 @@ Define backend application services and use cases.
 
 Services coordinate domain rules, validation, persistence, and export generation. They should not contain presentation layout details.
 
+## Technology Decision
+
+Backend services will be implemented in Java with Spring Boot.
+
+Expected Spring responsibilities:
+
+- Dependency injection for services, repositories, strategies, factories, and adapters.
+- Bean Validation integration for request and command validation.
+- Transaction management when database persistence is introduced.
+- Configuration management for export paths, templates, and persistence settings.
+
+Service classes should remain framework-light. They can be Spring beans, but business logic should not depend directly on HTTP, controller DTOs, or database-specific APIs.
+
 ## Initial Services
 
 ### Profile Service

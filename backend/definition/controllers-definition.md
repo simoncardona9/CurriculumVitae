@@ -6,6 +6,18 @@ Define the future REST API surface for the CV information system.
 
 Controllers expose application use cases through HTTP. They should validate request shape, call services, and return consistent responses.
 
+## Technology Decision
+
+Controllers will be implemented using Java with Spring Boot Web.
+
+Expected Spring components:
+
+- `@RestController` for HTTP endpoints.
+- `@RequestMapping` for endpoint grouping.
+- `@Valid` and Bean Validation annotations for request validation.
+- `ResponseEntity` or equivalent response conventions for status codes.
+- A global exception handler for consistent API errors.
+
 ## Initial Controller Areas
 
 ### Profile Controller

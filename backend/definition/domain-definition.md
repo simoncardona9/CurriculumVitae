@@ -6,6 +6,12 @@ Define the core business model for the CV information system.
 
 This document owns the domain language, entity boundaries, value objects, invariants, and rules that must remain true regardless of storage, API, or UI implementation.
 
+## Technology Decision
+
+The backend domain model will be implemented in Java.
+
+Java records may be used for immutable data carriers where they fit well. Domain behavior and validation rules should remain independent from Spring MVC, persistence annotations, and controller DTOs unless a deliberate exception is documented.
+
 ## Initial Scope
 
 - Person profile.
